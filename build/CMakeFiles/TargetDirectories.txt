@@ -1,0 +1,3 @@
+/home/julian/c/c-http-server/build/CMakeFiles/web_server.dir
+/home/julian/c/c-http-server/build/CMakeFiles/edit_cache.dir
+/home/julian/c/c-http-server/build/CMakeFiles/rebuild_cache.dir
