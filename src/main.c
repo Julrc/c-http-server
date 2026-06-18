@@ -2,6 +2,7 @@
 #include "tcp.h"
 #include "http.h"
 #include "route.h"
+#include "config.h"
 
 void hello_handler(http_request *req, http_response *res)
 {
@@ -22,16 +23,14 @@ int main()
 {
 	tcp_server server = {0};
 
-	// server_config config = { .port = 8080, };
+	server_config config = { .port = 8080, };
 
-	/*
 	if (loadConfig(&config) == 0)
 	{
 		debug_log("Failed to load config, using deafult values.");
 	}
-	*/
 
-	server_status_e status = bind_tcp_port(&server, 8080);
+	server_status_e status = bind_tcp_port(&server, config.port);
 
 	if (status != SERVER_OK) 
 	{

@@ -10,6 +10,7 @@ src/main.c
 src/tcp.c 
 src/http.c
 src/route.c
+src/config.c
 )
 
 add_library(mylib STATIC IMPORTED)

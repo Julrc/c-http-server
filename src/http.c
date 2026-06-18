@@ -58,7 +58,7 @@ http_parse_e parse_http_headers(const char *raw_request, http_request *request)
 			request->header_count++;
 		}
 
-		line_start = line_end++;
+		line_start = line_end + 2;
 
 	}
 

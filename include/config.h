@@ -6,5 +6,6 @@ typedef struct {
 } server_config;
 
 int loadConfig(server_config *config);
+char *loadfile(const char *path);
 
 #endif
