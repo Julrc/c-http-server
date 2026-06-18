@@ -1,1 +1,0 @@
-/usr/bin/cc CMakeFiles/web_server.dir/src/main.c.o CMakeFiles/web_server.dir/src/tcp.c.o CMakeFiles/web_server.dir/src/http.c.o CMakeFiles/web_server.dir/src/route.c.o -o web_server  /home/julian/c/c-http-server/lib/libcjson.a 
