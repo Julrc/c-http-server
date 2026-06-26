@@ -1,6 +1,8 @@
 #include "tcp.h"
 #include "main.h"
 
+#include <unistd.h>
+
 server_status_e bind_tcp_port(tcp_server *server, int port) 
 {
 	server->socket_fd = socket(AF_INET, SOCK_STREAM, 0);

@@ -1,8 +1,15 @@
-#include "main.h"
-#include "tcp.h"
-#include "http.h"
-#include "route.h"
 #include "config.h"
+#include "http.h"
+#include "main.h"
+#include "route.h"
+#include "tcp.h"
+#include "worker.h"
+
+#include "thread_pool.h"
+
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 void hello_handler(http_request *req, http_response *res)
 {
@@ -13,13 +20,14 @@ void hello_handler(http_request *req, http_response *res)
 		res->body = malloc(64);
 	}
 
-	strcpy(res->body, "Hello World!");
-	res->body_length = 14;
+	strcpy(res->body, "Hello World!\n");
+	res->body_length = 13;
 
-	add_http_header(res, "Content-Length", "14");
+	add_http_header(res, "Content-Length", "13");
+	add_http_header(res, "Connection", "close");
 }
 
-int main() 
+int main(void) 
 {
 	tcp_server server = {0};
 
@@ -38,6 +46,14 @@ int main()
 		exit(EXIT_FAILURE);
 	}
 
+	install_route(HTTP_METHOD_GET, "/hello", hello_handler);
+
+	thread_pool_t pool;
+	if (thread_pool_init(&pool, 8, 100) != 0) {
+		printf("Failed to initialize pool\n");
+		exit(-1);
+	}
+
 	for (;;) 
 	{
 		int client_fd = accept_client(server.socket_fd);
@@ -50,42 +66,21 @@ int main()
 
 		debug_log("Client connected");
 
-		http_request req = {0};
-		http_response res = {0};
-
-		init_http_response(&res);
-		install_route(HTTP_METHOD_GET, "/hello", hello_handler);
-
-		if (read_http_request(client_fd, &req) != HTTP_PARSE_OK) 
+		int *client_fd_p = malloc(sizeof(int));
+		if (!client_fd_p)
 		{
-			debug_log("Failed to read or parse HTTP request");
+			debug_log("Failed to allocate memory");
 			close(client_fd);
-			return 0;
+			continue;
 		}
-
-		if (parse_http_headers(req.buffer, &req) != HTTP_PARSE_OK) 
-		{
-			debug_log("Failed to read or parse HTTP headers");
-			close(client_fd);
-			return 0;
-		}
-
-		char sanitized_path[1024] = {0};
-		sanitize_path(req.path, sanitized_path, sizeof(sanitized_path));
-
-		if (!handle_request(&req, &res))
-		{
-			serve_file(sanitized_path, &res);
-		}
-		send_http_response(client_fd, &res);
-
-		close(client_fd);
-
+		*client_fd_p = client_fd;
+		thread_pool_add_task(&pool, work_task_th, (void *)client_fd_p);
 	}
 
 	close(server.socket_fd);
+
+	thread_pool_destroy(&pool);
+
 	return 0;
 
 }
-
-

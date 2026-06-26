@@ -2,8 +2,6 @@
 #define TCP_H
 
 #include <arpa/inet.h>
-#include <string.h>
-#include <unistd.h>
 
 typedef enum {
 	SERVER_OK,

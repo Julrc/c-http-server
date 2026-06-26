@@ -1,5 +1,6 @@
 #include "http.h"
 #include "route.h"
+
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -20,50 +21,6 @@ bool handle_request(http_request *req, http_response *res)
 	}
 
 	return false;
-}
-
-http_parse_e parse_http_headers(const char *raw_request, http_request *request)
-{
-	const char *line_start = strstr(raw_request, "\r\n") + 2; //skip first \r\n
-	if (!line_start) return HTTP_PARSE_INVALID;
-	while ((line_start) && (*line_start != '\r') && (*line_start != '\n'))
-	{
-		const char *line_end = strstr(line_start, "\r\n");
-		if (!line_end) break;
-
-		size_t line_length = line_end - line_start;
-		char line[1024];
-		strncpy(line, line_start, line_length);
-
-		char *colon_pos = strchr(line, ':');
-		if (colon_pos) 
-		{
-			*colon_pos = '\0';
-			const char *key = line;
-			const char *value = colon_pos + 1;
-
-			while (*value == ' ') value++;
-
-			request->headers = realloc(request->headers, sizeof(http_header_t) * (request->header_count + 1));
-
-			if (!request->headers) 
-			{
-				perror("Failed to allocate memory for headers");
-				exit(EXIT_FAILURE);
-			}
-
-			strncpy(request->headers[request->header_count].key, key, sizeof(request->headers[request->header_count].key) - 1);
-			strncpy(request->headers[request->header_count].value, value, sizeof(request->headers[request->header_count].value) - 1);
-
-			request->header_count++;
-		}
-
-		line_start = line_end + 2;
-
-	}
-
-	return HTTP_PARSE_OK;
-
 }
 
 void send_http_response(int client_fd, const http_response *response)
@@ -154,6 +111,18 @@ void sanitize_path(const char *requested_path, char *sanitized_path, size_t buff
 	}
 }
 
+void init_http_response(http_response *response) 
+{
+	response->status_code = 200;
+	strncpy(response->reason_phrase, "OK", sizeof(response->reason_phrase) - 1);
+	response->body = NULL;
+	response->body_length = 0;
+	response->headers = NULL;
+	response->header_count= 0 ;
+}
+
+
+
 char *construct_http_response(const http_response *response, size_t *response_length)
 {
 	size_t buffer_size = 1024;
@@ -238,15 +207,51 @@ void free_http_headers(http_request *request)
 	request->header_count = 0;
 }
 
-void init_http_response(http_response *response) 
+http_parse_e parse_http_headers(const char *raw_request, http_request *request)
 {
-	response->status_code = 200;
-	strncpy(response->reason_phrase, "OK", sizeof(response->reason_phrase) - 1);
-	response->body = NULL;
-	response->body_length = 0;
-	response->headers = NULL;
-	response->header_count= 0 ;
+	const char *line_start = strstr(raw_request, "\r\n") + 2; //skip first \r\n
+	if (!line_start) return HTTP_PARSE_INVALID;
+	while ((line_start) && (*line_start != '\r') && (*line_start != '\n'))
+	{
+		const char *line_end = strstr(line_start, "\r\n");
+		if (!line_end) break;
+
+		size_t line_length = line_end - line_start;
+		char line[1024];
+		strncpy(line, line_start, line_length);
+
+		char *colon_pos = strchr(line, ':');
+		if (colon_pos) 
+		{
+			*colon_pos = '\0';
+			const char *key = line;
+			const char *value = colon_pos + 1;
+
+			while (*value == ' ') value++;
+
+			request->headers = realloc(request->headers, sizeof(http_header_t) * (request->header_count + 1));
+
+			if (!request->headers) 
+			{
+				perror("Failed to allocate memory for headers");
+				exit(EXIT_FAILURE);
+			}
+
+			strncpy(request->headers[request->header_count].key, key, sizeof(request->headers[request->header_count].key) - 1);
+			strncpy(request->headers[request->header_count].value, value, sizeof(request->headers[request->header_count].value) - 1);
+
+			request->header_count++;
+		}
+
+		line_start = line_end + 2;
+
+	}
+
+	return HTTP_PARSE_OK;
+
 }
+
+
 
 http_parse_e read_http_request(int socket_fd, http_request *request) 
 {

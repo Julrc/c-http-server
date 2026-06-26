@@ -2,7 +2,6 @@
 #define ROUTE_H
 
 #include "http.h"
-#include "string.h"
 
 #define MAX_ROUTES 100
 
