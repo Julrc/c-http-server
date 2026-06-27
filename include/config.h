@@ -4,6 +4,7 @@
 typedef struct {
 	short port;
 	short thread_count;
+	short queue_size;
 } server_config;
 
 int loadConfig(server_config *config);

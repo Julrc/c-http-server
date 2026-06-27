@@ -1,4 +1,4 @@
-#include "config.h"
+#include "config.h"config.c
 #include "main.h"
 
 #include <cjson/cJSON.h>
@@ -57,7 +57,8 @@ int loadConfig(server_config *config)
 	}
 	cJSON *port = cJSON_GetObjectItemCaseSensitive(config_json, "portnumber");
 	cJSON *thread_count = cJSON_GetObjectItemCaseSensitive(config_json, "thread_count");
-	if (!cJSON_IsNumber(port) && !cJSON_IsNumber(thread_count))
+	cJSON *queue_size = cJSON_GetObjectItemCaseSensitive(config_json, "queue_size");
+	if (!cJSON_IsNumber(port) || !cJSON_IsNumber(thread_count) || !cJSON_IsNumber(queue_size))
 	{
 		status = 0;
 		goto end;
@@ -78,8 +79,16 @@ int loadConfig(server_config *config)
 
 	}
 
+	if (queue_size->valueint < 1 || queue_size->valueint > 2000)
+	{
+		debug_log("Invalid queue size specified in config");
+		status = 0;
+		goto end;
+	}
+
 	config->port = (short)port->valueint;
 	config->thread_count = (short)thread_count->valueint;
+	config->queue_size = (short)queue_size->valueint;
 
 	end:
 		cJSON_Delete(config_json);

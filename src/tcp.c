@@ -18,6 +18,13 @@ server_status_e bind_tcp_port(tcp_server *server, int port)
 	server->address.sin_addr.s_addr = INADDR_ANY;
 	server->address.sin_port = htons(port);
 
+	int opt = 1;
+
+	if (setsockopt(server->socket_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
+	{
+		perror("setsockopt");
+	}
+
 	if (bind(server->socket_fd, (struct sockaddr *)&server->address, sizeof(server->address)) < 0)
 	{
 		perror("bind");
@@ -26,7 +33,7 @@ server_status_e bind_tcp_port(tcp_server *server, int port)
 		return SERVER_BIND_ERROR;
 	}
 
-	if (listen(server->socket_fd, 5) < 0)
+	if (listen(server->socket_fd, 511) < 0)
 	{
 		debug_log("Listen failed");
 		close(server->socket_fd);
