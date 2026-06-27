@@ -38,11 +38,13 @@ int loadConfig(server_config *config)
 {
 	int status = 1;
 	char *configdata = loadfile("config.json");
+
 	if (!configdata)
 	{
 		debug_log("Failed to laod config, what happened?");
 	}
 	cJSON *config_json = cJSON_Parse(configdata);
+	free(configdata);
 	if (config_json == NULL)
 	{
 		const char *error_ptr = cJSON_GetErrorPtr();
@@ -54,7 +56,8 @@ int loadConfig(server_config *config)
 		goto end;
 	}
 	cJSON *port = cJSON_GetObjectItemCaseSensitive(config_json, "portnumber");
-	if (!cJSON_IsNumber(port))
+	cJSON *thread_count = cJSON_GetObjectItemCaseSensitive(config_json, "thread_count");
+	if (!cJSON_IsNumber(port) && !cJSON_IsNumber(thread_count))
 	{
 		status = 0;
 		goto end;
@@ -66,7 +69,17 @@ int loadConfig(server_config *config)
 		status = 0;
 		goto end;
 	}
+
+	if (thread_count->valueint < 1 || thread_count->valueint > 64)
+	{
+		debug_log("Invalid number thread count specified in config");
+		status = 0;
+		goto end;
+
+	}
+
 	config->port = (short)port->valueint;
+	config->thread_count = (short)thread_count->valueint;
 
 	end:
 		cJSON_Delete(config_json);

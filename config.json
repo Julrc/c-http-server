@@ -1,3 +1,4 @@
 {
-	"portnumber": 8080
+	"portnumber": 8080,
+	"thread_count": 8
 }

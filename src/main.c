@@ -31,11 +31,11 @@ int main(void)
 {
 	tcp_server server = {0};
 
-	server_config config = { .port = 8080, };
+	server_config config = { .port = 8080, .thread_count = 8};
 
 	if (loadConfig(&config) == 0)
 	{
-		debug_log("Failed to load config, using deafult values.");
+		debug_log("Failed to load config, using default values.");
 	}
 
 	server_status_e status = bind_tcp_port(&server, config.port);
@@ -49,7 +49,7 @@ int main(void)
 	install_route(HTTP_METHOD_GET, "/hello", hello_handler);
 
 	thread_pool_t pool;
-	if (thread_pool_init(&pool, 8, 100) != 0) {
+	if (thread_pool_init(&pool, config.thread_count, 100) != 0) {
 		printf("Failed to initialize pool\n");
 		exit(-1);
 	}

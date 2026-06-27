@@ -1,6 +1,7 @@
 #include "tcp.h"
 #include "main.h"
 
+#include <string.h>
 #include <unistd.h>
 
 server_status_e bind_tcp_port(tcp_server *server, int port) 
@@ -12,12 +13,14 @@ server_status_e bind_tcp_port(tcp_server *server, int port)
 		return SERVER_SOCKET_ERROR;
 	}
 
+	memset(&server->address, 0, sizeof(server->address));
 	server->address.sin_family = AF_INET;
 	server->address.sin_addr.s_addr = INADDR_ANY;
 	server->address.sin_port = htons(port);
 
 	if (bind(server->socket_fd, (struct sockaddr *)&server->address, sizeof(server->address)) < 0)
 	{
+		perror("bind");
 		debug_log("Bind failed");
 		close(server->socket_fd);
 		return SERVER_BIND_ERROR;
