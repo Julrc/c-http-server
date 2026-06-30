@@ -1,3 +1,4 @@
+#include "arena.h"
 #include "config.h"
 #include "http.h"
 #include "main.h"
@@ -7,13 +8,14 @@
 
 #include "thread_pool.h"
 
+
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
+
 void hello_handler(http_request *req, http_response *res)
 {
-	sleep(1);
 	res->status_code = 200;
 
 	if (!res->body) 
@@ -26,6 +28,18 @@ void hello_handler(http_request *req, http_response *res)
 
 	add_http_header(res, "Content-Length", "13");
 	add_http_header(res, "Connection", "close");
+}
+
+void *arena_init(void)
+{
+	Arena *arena = ArenaAlloc();
+	return arena;
+}
+
+void arena_stop(void *ctx)
+{
+	Arena* arena = (Arena *)ctx;
+	ArenaRelease(arena);
 }
 
 int main(void) 
@@ -50,10 +64,12 @@ int main(void)
 	install_route(HTTP_METHOD_GET, "/hello", hello_handler);
 
 	thread_pool_t pool;
-	if (thread_pool_init(&pool, config.thread_count, config.queue_size) != 0) {
+	if (thread_pool_init(&pool, config.thread_count, config.queue_size, arena_init, arena_stop) != 0) {
 		printf("Failed to initialize pool\n");
 		exit(-1);
 	}
+
+	Arena *request_arena = ArenaAlloc();
 
 	for (;;) 
 	{
@@ -67,16 +83,21 @@ int main(void)
 
 		debug_log("Client connected");
 
-		int *client_fd_p = malloc(sizeof(int));
+		int *client_fd_p = ArenaPushNoZero(request_arena, sizeof(int));
+		
 		if (!client_fd_p)
 		{
 			debug_log("Failed to allocate memory");
 			close(client_fd);
+			ArenaClear(request_arena);
 			continue;
 		}
+	
 		*client_fd_p = client_fd;
 		thread_pool_add_task(&pool, work_task_th, (void *)client_fd_p);
 	}
+
+	ArenaRelease(request_arena);
 
 	close(server.socket_fd);
 

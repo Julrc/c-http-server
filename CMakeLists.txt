@@ -12,6 +12,7 @@ src/http.c
 src/route.c
 src/tcp.c 
 src/worker.c
+src/arena.c
 thread_pool/thread_pool.c
 )
 

@@ -1,4 +1,4 @@
-#include "config.h"config.c
+#include "config.h"
 #include "main.h"
 
 #include <cjson/cJSON.h>

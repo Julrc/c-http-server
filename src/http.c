@@ -1,3 +1,4 @@
+#include "arena.h"
 #include "http.h"
 #include "route.h"
 
@@ -23,10 +24,10 @@ bool handle_request(http_request *req, http_response *res)
 	return false;
 }
 
-void send_http_response(int client_fd, const http_response *response)
+void send_http_response(int client_fd, const http_response *response, Arena *req_arena)
 {
 	size_t response_length = 0;
-	char *response_data = construct_http_response(response, &response_length);
+	char *response_data = construct_http_response(response, &response_length, req_arena);
 
 	size_t total_sent = 0;
 	while (total_sent < response_length)
@@ -40,17 +41,16 @@ void send_http_response(int client_fd, const http_response *response)
 		total_sent += bytes_sent;
 	}
 
-	free(response_data);
 }
 
-void serve_file(const char *path, http_response *response)
+void serve_file(const char *path, http_response *response, Arena *req_arena)
 {
 	FILE *file = fopen(path, "rb+");
 	if (!file)
 	{
 		response->status_code = 404;
 		strncpy(response->reason_phrase, "Not found", sizeof(response->reason_phrase) - 1);
-		serve_file("./www/404.html", response);
+		serve_file("./www/404.html", response, req_arena);
 		return;
 	}
 
@@ -59,7 +59,7 @@ void serve_file(const char *path, http_response *response)
 	size_t file_size = ftell(file);
 	fseek(file, 0, SEEK_SET);
 
-	char *file_content = malloc(file_size + 1);
+	char *file_content = ArenaPushNoZero(req_arena, file_size + 1);
 
 	if (!file_content)
 	{
@@ -123,10 +123,10 @@ void init_http_response(http_response *response)
 
 
 
-char *construct_http_response(const http_response *response, size_t *response_length)
+char *construct_http_response(const http_response *response, size_t *response_length, Arena *req_arena)
 {
 	size_t buffer_size = 1024;
-	char *buffer = malloc(buffer_size);
+	char *buffer = ArenaPushNoZero(req_arena, buffer_size);
 
 	if (!buffer)
 	{
@@ -146,8 +146,9 @@ char *construct_http_response(const http_response *response, size_t *response_le
 
 		while (offset + header_length + 1 > buffer_size)
 		{
+			ArenaPop(req_arena, buffer_size);
 			buffer_size *= 2;
-			buffer = realloc(buffer, buffer_size);
+			buffer = ArenaPushNoZero(req_arena, buffer_size);
 
 			if (!buffer)
 			{
@@ -163,8 +164,9 @@ char *construct_http_response(const http_response *response, size_t *response_le
 	{
 		while (offset + response->body_length + 1 > buffer_size)
 		{
+			ArenaPop(req_arena, buffer_size);
 			buffer_size *= 2;
-			buffer = realloc(buffer, buffer_size);
+			buffer = ArenaPushNoZero(req_arena, buffer_size);
 
 			if (!buffer)
 			{
@@ -176,7 +178,6 @@ char *construct_http_response(const http_response *response, size_t *response_le
 		memcpy(buffer + offset, response->body, response->body_length);
 		offset += response->body_length;
 	}
-	free(response->body);
 
 	*response_length = offset;
 	return buffer;

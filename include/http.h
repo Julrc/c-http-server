@@ -1,6 +1,7 @@
 #ifndef HTTP_H
 #define HTTP_H
 
+#include "arena.h"
 #include <stdio.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -54,11 +55,11 @@ typedef struct
 
 
 bool handle_request(http_request *req, http_response *res);
-void send_http_response(int client_fd, const http_response *response);
-void serve_file(const char *path, http_response *response);
+void send_http_response(int client_fd, const http_response *response, Arena *req_arena);
+void serve_file(const char *path, http_response *response, Arena *req_arena);
 void sanitize_path(const char *requested_path, char *sanitized_path, size_t buffer_size);
 void init_http_response(http_response *response);
-char *construct_http_response(const http_response *response, size_t *response_length);
+char *construct_http_response(const http_response *response, size_t *response_length, Arena *req_arena);
 void add_http_header(http_response *res, const char* key, const char* value);
 void free_http_headers(http_request *request);
 http_parse_e parse_http_headers(const char *raw_request, http_request *request);

@@ -2,14 +2,13 @@
 #include "http.h"
 #include "main.h"
 
-#include <stdlib.h>
 #include <unistd.h>
 
-void work_task_th(void *vargs)
+void work_task_th(void *vargs, void *ctx)
 {
-	int client_fd = *(int *)vargs;
-	free(vargs);
-	
+	Arena *thread_arena = (Arena *)ctx;
+	int client_fd = *((int *)vargs);
+
 	http_request req = {0};
 	http_response res = {0};
 
@@ -34,10 +33,11 @@ void work_task_th(void *vargs)
 
 	if (!handle_request(&req, &res))
 	{
-		serve_file(sanitized_path, &res);
+		serve_file(sanitized_path, &res, thread_arena);
 	}
-	send_http_response(client_fd, &res);
+	send_http_response(client_fd, &res, thread_arena);
 
+	ArenaClear(thread_arena);
 	close(client_fd);
 }
 
