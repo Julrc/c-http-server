@@ -43,63 +43,6 @@ void send_http_response(int client_fd, const http_response *response, Arena *req
 
 }
 
-void serve_file(const char *path, http_response *response, Arena *req_arena)
-{
-	FILE *file = fopen(path, "rb+");
-	if (!file)
-	{
-		response->status_code = 404;
-		strncpy(response->reason_phrase, "Not found", sizeof(response->reason_phrase) - 1);
-		serve_file("./www/404.html", response, req_arena);
-		return;
-	}
-
-	// determine file size
-	fseek(file, 0, SEEK_END);
-	size_t file_size = ftell(file);
-	fseek(file, 0, SEEK_SET);
-
-	char *file_content = ArenaPushNoZero(req_arena, file_size + 1);
-
-	if (!file_content)
-	{
-		perror("Failed to allocate memory for file content");
-		fclose(file);
-		exit(EXIT_FAILURE);
-	}
-
-	fread(file_content, 1, file_size, file);
-	fclose(file);
-	file_content[file_size] = '\0';
-
-	response->body = file_content;
-	response->body_length = file_size;
-
-	if (strstr(path, ".html"))
-	{
-		add_http_header(response, "Content-Type", "text/html");
-	}
-	else if (strstr(path, ".css"))
-	{
-		add_http_header(response, "Content-Type", "text/css");
-	}
-	else if (strstr(path, ".js"))
-	{
-		add_http_header(response, "Content-Type", "application/javascript");
-	}
-	else if (strstr(path, ".png"))
-	{
-		add_http_header(response, "Content-Type", "image/png");
-	}
-	else
-	{
-		add_http_header(response, "Content-Type", "application/octet-stream");
-	}
-	char content_length[32];
-	snprintf(content_length, sizeof(content_length), "%zu", file_size);
-	add_http_header(response, "Content-Length", content_length);
-}
-
 void sanitize_path(const char *requested_path, char *sanitized_path, size_t buffer_size)
 {
 	const char *web_root = "./www";

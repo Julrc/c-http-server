@@ -18,9 +18,11 @@ Arena *ArenaAlloc(void);
 void ArenaRelease(Arena *arena);
 
 void *ArenaPushNoZero(Arena *arena, U64 size);
-
 void ArenaPop(Arena *arena, U64 size);
 
 void ArenaClear(Arena *arena);
+
+void *arena_init(void);
+void arena_stop(void *ctx);
 
 #endif

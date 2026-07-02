@@ -1,5 +1,6 @@
 #include "arena.h"
 #include "config.h"
+#include "file.h"
 #include "http.h"
 #include "main.h"
 #include "route.h"
@@ -30,23 +31,15 @@ void hello_handler(http_request *req, http_response *res)
 	add_http_header(res, "Connection", "close");
 }
 
-void *arena_init(void)
-{
-	Arena *arena = ArenaAlloc();
-	return arena;
-}
-
-void arena_stop(void *ctx)
-{
-	Arena* arena = (Arena *)ctx;
-	ArenaRelease(arena);
-}
-
 int main(void) 
 {
 	tcp_server server = {0};
 
+	Arena *request_arena = ArenaAlloc();
+	file_cache_init();
+
 	server_config config = { .port = 8080, .thread_count = 8, .queue_size = 10};
+
 
 	if (loadConfig(&config) == 0)
 	{
@@ -63,13 +56,12 @@ int main(void)
 
 	install_route(HTTP_METHOD_GET, "/hello", hello_handler);
 
+
 	thread_pool_t pool;
 	if (thread_pool_init(&pool, config.thread_count, config.queue_size, arena_init, arena_stop) != 0) {
 		printf("Failed to initialize pool\n");
 		exit(-1);
 	}
-
-	Arena *request_arena = ArenaAlloc();
 
 	for (;;) 
 	{
@@ -98,6 +90,7 @@ int main(void)
 	}
 
 	ArenaRelease(request_arena);
+	file_cache_free();
 
 	close(server.socket_fd);
 

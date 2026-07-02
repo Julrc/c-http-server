@@ -58,3 +58,14 @@ void ArenaClear(Arena *arena)
 	arena->offset = 0;
 }
 
+void *arena_init(void)
+{
+	Arena *arena = ArenaAlloc();
+	return arena;
+}
+
+void arena_stop(void *ctx)
+{
+	Arena *arena = (Arena *)ctx;
+	ArenaRelease(arena);
+}

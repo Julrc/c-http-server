@@ -13,6 +13,7 @@ src/route.c
 src/tcp.c 
 src/worker.c
 src/arena.c
+src/file.c
 thread_pool/thread_pool.c
 )
 
